@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-
-
 const Login = () => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState('');
