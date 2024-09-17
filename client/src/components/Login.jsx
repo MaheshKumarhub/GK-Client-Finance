@@ -2,31 +2,60 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-
-
 const Login = () => {
-  const navigate = useNavigate();
-  const [userName, setUserName] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [formLoaded, setFormLoaded] = useState(false);
+  const [error, setError] = useState('');
+  const [locationError, setLocationError] = useState('');
+  const [location, setLocation] = useState({ latitude: null, longitude: null });
+  const [locationGranted, setLocationGranted] = useState(false); // Track if location is granted
+  const navigate = useNavigate();
 
   useEffect(() => {
-    setTimeout(() => {
-      setFormLoaded(true);
-    }, 100);
+    // Request location when the component loads
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+          setLocationGranted(true); // Enable login once location is received
+        },
+        (error) => {
+          setLocationError('Location access is required to log in. Please allow location access.');
+          console.error("Error getting geolocation:", error);
+          setLocationGranted(false); // Disable login if location is not granted
+        }
+      );
+    }
   }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!locationGranted) {
+      setError('Location access is required to log in.');
+      return;
+    }
+
     try {
-      const res = await axios.post('/api/login', { userName, password });
-      if (res.data.success) {
-        navigate('/dashboard'); // Redirect to dashboard on successful login
-      } else {
-        alert('Invalid credentials');
-      }
-    } catch (error) {
-      console.error('Login error', error);
+      const response = await axios.post('http://localhost:5000/login', {
+        username,
+        password,
+        latitude: location.latitude,
+        longitude: location.longitude
+      });
+
+      const { token, userType } = response.data;
+
+      // Save token and user type in localStorage
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userType', userType);
+
+      // Navigate to the dashboard
+      navigate('/dashboard');
+    } catch (err) {
+      setError('Invalid username or password');
     }
   };
 
@@ -36,19 +65,21 @@ const Login = () => {
       <div className="bubble" />
       <div className="bubble" />
       <div className="bubble" />
-      
+      <div className="bubble" />
+
       <div className="flex items-center justify-center min-h-screen">
-        <div className={`bg-white p-8 rounded-lg shadow-lg w-full max-w-md transform transition-all duration-500 ${formLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
           <h2 className="text-2xl font-bold text-center mb-6">User Login</h2>
+          {locationError && <p className="text-red-600 text-center">{locationError}</p>} {/* Show location error */}
           <form onSubmit={handleLogin}>
             <div className="mb-4">
               <label htmlFor="username" className="block text-gray-700">UserName</label>
               <input
-                type="username"
+                type="text"
                 id="username"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                className="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                 placeholder="Enter your username"
                 required
               />
@@ -60,18 +91,20 @@ const Login = () => {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300"
+                className="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                 placeholder="Enter your password"
                 required
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-cyan-900 text-white font-bold py-2 rounded-lg hover:bg-cyan-600 transition-colors duration-300"
+              className={`w-full bg-cyan-900 text-white font-bold py-2 rounded-lg ${locationGranted ? 'hover:bg-cyan-600' : 'opacity-50 cursor-not-allowed'}`} 
+              disabled={!locationGranted} // Disable button if location not granted
             >
               Login
             </button>
           </form>
+          {error && <p className="text-red-600 text-center mt-4">{error}</p>}
         </div>
       </div>
     </div>

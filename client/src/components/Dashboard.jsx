@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
-import { FaHome, FaChartBar, FaCog } from 'react-icons/fa';
+import { FaHome, FaChartBar, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom'; // To handle navigation
 
 // Define the gradient animation using Tailwind CSS classes
 const gradientAnimation = 'bg-gradient-to-r from-cyan-700 to-cyan-500 bg-[length:400%_400%] animate-gradient-x';
 
 const Dashboard = () => {
   const [activeMenu, setActiveMenu] = useState('overview');
+  const navigate = useNavigate(); // Use the navigate hook to programmatically navigate
 
+  // Handle menu item click
   const handleMenuClick = (menu) => {
     setActiveMenu(menu);
+  };
+
+  // Handle logout functionality
+  const handleLogout = () => {
+    localStorage.removeItem('authToken'); // Remove the token from localStorage
+    navigate('/'); // Redirect to the login page
   };
 
   return (
@@ -51,6 +60,16 @@ const Dashboard = () => {
               >
                 <FaCog className="inline-block mr-2" />
                 Settings
+              </button>
+            </li>
+            {/* Logout Button */}
+            <li>
+              <button
+                className="w-full text-left px-4 py-2 hover:bg-cyan-500 transition-colors duration-300"
+                onClick={handleLogout}
+              >
+                <FaSignOutAlt className="inline-block mr-2" />
+                Logout
               </button>
             </li>
           </ul>
